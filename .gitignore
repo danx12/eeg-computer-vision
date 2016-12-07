@@ -96,6 +96,7 @@ ENV/
 *.docx
 *.xlxs
 
+Report/
 
 images/
 Exercises/Exercise_8/cifar/batches.meta
