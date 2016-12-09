@@ -13,6 +13,7 @@ import scipy as sp
 import pylab as pl
 from readStoredPickle import readStoredData,saveData
 from sklearn.tree import DecisionTreeClassifier
+from sklearn import svm
 from sklearn.model_selection import cross_val_score
 
 
@@ -64,7 +65,8 @@ def computeBestRectangle(RegionSet,labels,i,j,w,h):
         for s in range(0,nSamples):
             vect[i] = computeHaarRectangle(RegionSet[s,:,:],i,j,w,h,f)
         clf = DecisionTreeClassifier(random_state=0)
-#        score = cross_val_score(clf, np.ravel(vect), np.ravel(labels), cv=3)
+#        clf = svm.SVC(kernel='linear', C=1)
+#        score = cross_val_score(clf, vect.reshape(-1, 1), np.ravel(labels), cv=3)
         clf.fit(vect.reshape(-1, 1),labels)
         score = clf.score(vect.reshape(-1, 1),np.ravel(labels))
         results[f] = np.mean(score)
@@ -76,18 +78,26 @@ def computeBestSubRegion(IntegralRegionSet,labels,rsize):
     subregionsToCompute = [30,15,10]
     nSubWindows = IntegralRegionSet.shape[1]
     for reg in range(0,nSubWindows):
-        print("Computing region: %d of %d:" % (reg,nSubWindows))
-        for sub in range(0,len(subregionsToCompute)):
-            best_rect = 0;
-            best_params = [0,0,0,0]
-            best_score = -100
-            for i in np.linspace(0,rsize,rsize/subregionsToCompute[sub]+1)[:-1]:
-                score,rect = computeBestRectangle(IntegralRegionSet[:,reg,:,:],labels,i,i,
-                                                 subregionsToCompute[sub],subregionsToCompute[sub])
-                if(score >= best_score):
-                    best_score = score
-                    best_rect = rect
-                    best_params = [i,i,subregionsToCompute[sub],subregionsToCompute[sub]]
+        print("Computing region: %d of %d" % (reg,nSubWindows))
+#        for sub in range(0,len(subregionsToCompute)):
+        best_rect = 0;
+        best_params = [0,0,0,0]
+        best_score = -100
+        for size in range(4,rsize):
+            print("Computing size: %d of %d" % (size,rsize))
+            for i in range(0,rsize-size):
+                for j in range(0,rsize-size):
+                    
+                    
+                    score,rect = computeBestRectangle(IntegralRegionSet[:,reg,:,:],labels,i,j,
+                                                 size,size)
+#            for i in np.linspace(0,rsize,rsize/subregionsToCompute[sub]+1)[:-1]:
+#                score,rect = computeBestRectangle(IntegralRegionSet[:,reg,:,:],labels,i,i,
+#                                                 subregionsToCompute[sub],subregionsToCompute[sub])
+                    if(score >= best_score):
+                        best_score = score
+                        best_rect = rect
+                        best_params = [i,j,size]
         bestFeats.append({'reg':reg,'rect':best_rect,'best_params':best_params,'best_score':best_score})
     
     return bestFeats
@@ -109,7 +119,7 @@ def createRegions(im,rsize):
     
 def datasetRegions(dataset,rsize):
     nsamples = dataset.shape[0]
-    results = np.zeros([nsamples,169,30,30])
+    results = np.zeros([nsamples,169,rsize,rsize])
     for i in range(0,nsamples):
         results[i,:] = createRegions(dataset[i,:],rsize)
     return results
